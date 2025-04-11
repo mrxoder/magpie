@@ -4,6 +4,7 @@ from helper.colors import *
 import threading
 from PIL import Image
 import uuid
+from subprocess import Popen
 
 
 class Target:
@@ -284,7 +285,7 @@ class Target:
                return 0
 
             print(f"{YELLOW}[> Opening {_file["value"]}...{RESET}")
-            os.system("xdg-open " + os.path.join( FILE_DIRECTORY, _file["value"] ) )
+            Popen( [ "xdg-open",  os.path.join( FILE_DIRECTORY, _file["value"] ) ] )
         except Exception as e:
             print(f"{RED}Failed to open the file: {e}")
 
