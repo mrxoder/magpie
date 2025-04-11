@@ -1,6 +1,6 @@
 # 🐦 Magpie
 
-**Magpie** is a simple command-line tool for storing and organizing OSINT (Open-Source Intelligence) data and leaked information related to a target. Whether you're tracking digital footprints or building up intelligence for research, Magpie lets you store everything in one searchable, structured place.
+**Magpie** is a simple command-line tool for storing and organizing OSINT (Open-Source Intelligence) data or leaked information related to a target. Whether you're tracking digital footprints or building up intelligence for research, Magpie lets you store everything in one searchable, structured place.
 
 ---
 
