@@ -29,6 +29,12 @@ parser_data = main_subparsers.add_parser(
     description='Commands for managing data in targets.'
 )
 
+parser_open_file = main_subparsers.add_parser(
+    'open',
+    help='Open the file in tartget database',
+    description='Open the file in tartget database'
+)
+
 target_subparsers = parser_target.add_subparsers(
     dest='action',
     required=True,
@@ -40,6 +46,13 @@ data_subparsers = parser_data.add_subparsers(
     dest='action',
     required=True,
     title='data actions',
+    metavar='<action>'
+)
+
+open_subparsers = parser_open_file.add_subparsers(
+    dest='action',
+    required=True,
+    title='open file or image',
     metavar='<action>'
 )
 
@@ -81,6 +94,14 @@ target_remove_data = data_subparsers.add_parser('remove', help='remove data from
 target_remove_data.add_argument('--target',   required=True, help='Target name.')
 target_remove_data.add_argument('--label',  required=True, help='data label.')
 target_remove_data.set_defaults(func=targetHelper.handle_data_remove)
+
+target_open = open_subparsers.add_parser('image', help='open image.')
+target_open.add_argument('--path',  required=True, help='image path in target database: /targetname/imagelabel')
+target_open.set_defaults(func=targetHelper.handle_open_image)
+
+target_open_file = open_subparsers.add_parser('file', help='open file.')
+target_open_file.add_argument('--path',  required=True, help='file path in target database: /targetname/filelabel')
+target_open_file.set_defaults(func=targetHelper.handle_open_file)
 
 
 

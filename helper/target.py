@@ -1,7 +1,9 @@
-from .db import DB
+from .db import DB, FILE_DIRECTORY
 import shutil, os
 from helper.colors import *
 import threading
+from PIL import Image
+import uuid
 
 
 class Target:
@@ -87,11 +89,24 @@ class Target:
                     delete_previous_file = check_target[label]["value"]
 
         check_target[label] = {"type": type_, "value": data}
-        if type_ == "file" or type_ == "image":
-            src_path = os.path.join(data)
-            check_target[label]["value"] = src_path.split("/")[-1]
-            dest_path = "data/files/" + src_path.split("/")[-1]
 
+        if type_ == "file" or type_ == "image":
+            src_path = data
+            new_filename = ""
+
+            ext = data.split(".")
+            if len( ext ) > 1:
+               ext = "." + ext[-1]
+            else:
+               ext = ""
+
+            while True:
+                new_filename  = uuid.uuid4().hex
+                if not os.path.exists( os.path.join( FILE_DIRECTORY, new_filename + ext ) ):
+                   break
+
+            check_target[label]["value"] = new_filename + ext
+            dest_path = FILE_DIRECTORY + new_filename + ext
             shutil.copy(data, dest_path)
 
         if delete_previous_file != "":
@@ -126,7 +141,7 @@ class Target:
         print(f"{RED}{label} removed.{RESET}")
 
     def delete_file(self, filename):
-        os.unlink("data/files/" + filename)
+        os.unlink( FILE_DIRECTORY + filename )
 
     def dump_dict( self, target_root ):
         check_target = target_root
@@ -232,3 +247,44 @@ class Target:
                 th.join()
 
         print()
+
+
+    def handle_open_image(self, args):
+        path = args.path
+        s_path = path.strip("/").split("/")
+        check_target = self.db.read(s_path[0])
+
+        if check_target == None:
+            print(f"{RED}Target not found.{RESET}")
+            return False
+        try:
+            image_file = check_target[ s_path[-1] ]
+            if image_file["type"] != "image":
+               print(f"{RED}Failed, it is not an image.{RESET}")
+               return 0
+
+            print(f"{YELLOW}[> Showing {image_file["value"]}...{RESET}")
+            img = Image.open( os.path.join( FILE_DIRECTORY, image_file["value"] ) )
+            img.show()
+        except:
+            print(f"{RED}Failed to open the image.")
+
+    def handle_open_file(self, args):
+        path = args.path
+        s_path = path.strip("/").split("/")
+        check_target = self.db.read(s_path[0])
+
+        if check_target == None:
+            print(f"{RED}Target not found.{RESET}")
+            return False
+        try:
+            _file = check_target[ s_path[-1] ]
+            if _file["type"] != "file":
+               print(f"{RED}Failed, it is not a file.{RESET}")
+               return 0
+
+            print(f"{YELLOW}[> Opening {_file["value"]}...{RESET}")
+            os.system("xdg-open " + os.path.join( FILE_DIRECTORY, _file["value"] ) )
+        except Exception as e:
+            print(f"{RED}Failed to open the file: {e}")
+

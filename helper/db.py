@@ -1,7 +1,8 @@
 import json
 import os
 
-DATABASE_FILE = './data/database.json'
+DATABASE_FILE  =  './data/database.json'
+FILE_DIRECTORY = "data/files/"
 
 class DB:
     def __init__(self, db_file=DATABASE_FILE ):
