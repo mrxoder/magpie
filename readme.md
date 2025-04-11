@@ -22,6 +22,7 @@
 git clone https://github.com/mrxoder/magpie.git
 cd magpie
 ```
+
 ### 🚀 Make it executable from anywhere (optional)
 
 If you'd like to use `magpie` as a global command on your system (without needing to type `python magpie.py` each time), follow these steps:
