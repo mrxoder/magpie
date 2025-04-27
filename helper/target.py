@@ -1,4 +1,3 @@
-from .db import DB
 from .jsondb import *
 import shutil, os
 from helper.colors import *
