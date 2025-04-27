@@ -1,4 +1,5 @@
-from .db import DB, FILE_DIRECTORY
+from .db import DB
+from .jsondb import *
 import shutil, os
 from helper.colors import *
 import threading
@@ -9,24 +10,25 @@ from subprocess import Popen, PIPE
 
 class Target:
     def __init__(self):
-        self.db = DB()
+        self.jsondb = JSONDB()
         self.DATATYPES = ["text", "file", "image"]
 
     def handle_target_add(self, args):
         name = args.name
-        check_target = self.db.read(name)
+        check_target = self.jsondb.get(name)
         if check_target != None:
             print(f"{RED}Target name already exist.{RESET}")
             return False
-        self.db.create([{name: {}}])
+        self.jsondb.create([{name: {}}])
         print(f"{name} created.")
 
     def handle_data_count(self, count):
-        all_ = self.db._read_db()
-        print("[> Target:", len(all_.keys()))
+        all_ = self.jsondb.count_data()
+        print( "[> Target:", all_ )
 
     def handle_target_list(self, args):
-        all_ = self.db._read_db().keys()
+        all_ = self.jsondb.allKeys()
+        all_ = list(all_.keys())
 
         header = f" All Targets "
         border_char = "#"
@@ -43,7 +45,7 @@ class Target:
 
     def handle_target_delete(self, args):
         name = args.target
-        check_target = self.db.read(name)
+        check_target = self.jsondb.get(name)
 
         if check_target == None:
             print("Target not found.")
@@ -58,7 +60,7 @@ class Target:
             if check_target[k_]["type"] == "file" or check_target[k_]["type"] == "image":
                 self.delete_file(check_target[k_]["value"])
 
-        self.db.delete(name)
+        self.jsondb.delete(name)
         print(f"{RED}{name} removed.{RESET}")
 
     def handle_data_add(self, args):
@@ -67,7 +69,7 @@ class Target:
         type_ = args.type
         data = args.value
 
-        check_target = self.db.read(name)
+        check_target = self.jsondb.get(name)
         if check_target == None:
             print(f"{RED}Target not found.{RESET}")
             return False
@@ -116,14 +118,16 @@ class Target:
             except:
                 pass
 
-        self.db.update(name, check_target)
+        update_data = {}
+        update_data[ name ] = check_target
+        self.jsondb.update( [update_data] )
         print(f"{GREEN}{label} saved.{RESET}")
 
     def handle_data_remove(self, args, confirm=True):
         name = args.target
         label = args.label
 
-        check_target = self.db.read(name)
+        check_target = self.jsondb.get(name)
         if check_target == None:
             print(f"{RED}Target not found.{RESET}")
             return False
@@ -138,7 +142,11 @@ class Target:
             self.delete_file(check_target[label]["value"])
 
         del check_target[label]
-        self.db.update(name, check_target)
+
+        update_data = {}
+        update_data[ name ] = check_target
+        self.jsondb.update( [update_data] )
+
         print(f"{RED}{label} removed.{RESET}")
 
     def delete_file(self, filename):
@@ -149,17 +157,17 @@ class Target:
         for k, val in check_target.items():
             if val["type"] == "text":
                 print(
-                    f"{GREEN}[>{RESET} {YELLOW}{k}({val['type']}){RESET} {GREEN}:{RESET} {CYAN}{val['value']}{RESET}"
+                    f"{GREEN} [>{RESET} {YELLOW}{k}({val['type']}){RESET} {GREEN}:{RESET} {CYAN}{val['value']}{RESET}"
                 )
             elif val["type"] == "file" or val["type"] == "image":
                 print(
-                    f"{YELLOW}[>{RESET} {YELLOW}{k}({val['type']}){RESET} {GREEN}:{RESET} {CYAN}{val['value']}{RESET}"
+                    f"{YELLOW} [>{RESET} {YELLOW}{k}({val['type']}){RESET} {GREEN}:{RESET} {CYAN}{val['value']}{RESET}"
                 )
         print()
 
     def handle_target_dump(self, args):
         target = args.target
-        check_target = self.db.read(target)
+        check_target = self.jsondb.get(target)
 
         if check_target == None:
             print(f"{RED}Target not found.{RESET}")
@@ -182,13 +190,13 @@ class Target:
                 part = f"{RED}{query}{RESET}".join( k.split(query) )
                 print(f"{GREEN}[> {CYAN}{target_name}.{GREEN}\"{part}\"{RESET}")
                 if is_dump:
-                    root_ = self.db.read( target_name )
+                    root_ = self.jsondb.get( target_name )
                     self.dump_dict( root_ )
             if query in target_dict[k]["value"]:
                 part = f"{RED}{query}{RESET}".join( target_dict[k]["value"].split(query) )
                 print(f"{GREEN}[> {CYAN}{target_name}.{YELLOW}{k}{GREEN}[{YELLOW}{target_dict[k]['type']}{GREEN}]={RESET}{GREEN}\"{part}\"{RESET}")
                 if is_dump:
-                    root_ = self.db.read( target_name )
+                    root_ = self.jsondb.get( target_name )
                     self.dump_dict( root_ )
 
     def handle_target_search(self, args):
@@ -214,7 +222,7 @@ class Target:
 
         threads = []
         if target:
-            check_target = self.db.read(target)
+            check_target = self.jsondb.get(target)
             if check_target == None:
                 print(f"{RED}Target not found.{RESET}")
                 return 0
@@ -227,33 +235,25 @@ class Target:
                 self._seek(query, check_target, target)
         else:
             print()
-            check_target = self.db._read_db()
-            for k in check_target.keys():
+            alltargets = self.jsondb.allKeys()
+            for k in alltargets.keys():
                 if query in k:  # search in target name
                     part = f"{RED}{query}{RESET}".join( k.split(query) )
-                    print(f"{GREEN}[>.{RESET}\"{part}\"{RESET}")
+                    print(f"{GREEN}[> {RESET}\"{part}\"{RESET}")
                     if is_dump:
-                       root_ = self.db.read( k )
+                       root_ = self.jsondb.get( k )
                        self.dump_dict( root_ )
 
-                self._seek(query, check_target[k], k, is_dump )
-                # th = threading.Thread(
-                #     target=self._seek, args=(query, check_target[k], k, is_dump )
-                # )
-                # th.start()
-                # threads.append(th)
-
-        if len(threads) > 0:
-            for th in threads:
-                th.join()
-
+                tmp_part_file = JSONFILE( DATABASE_PATH + DATABASE_FILENAME + str(alltargets[k]) )
+                tmp_part_content = tmp_part_file._read_db()
+                self._seek(query, tmp_part_content[ k ], k, is_dump )
         print()
 
 
     def handle_open_image(self, args):
         path = args.path
         s_path = path.strip("/").split("/")
-        check_target = self.db.read(s_path[0])
+        check_target = self.jsondb.get(s_path[0])
 
         if check_target == None:
             print(f"{RED}Target not found.{RESET}")
@@ -273,7 +273,7 @@ class Target:
     def handle_open_file(self, args):
         path = args.path
         s_path = path.strip("/").split("/")
-        check_target = self.db.read(s_path[0])
+        check_target = self.jsondb.get(s_path[0])
 
         if check_target == None:
             print(f"{RED}Target not found.{RESET}")

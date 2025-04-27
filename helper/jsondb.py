@@ -84,6 +84,20 @@ class JSONDB:
             return tmp_part_content[ key ]
         else:
             return None
+    
+    def count_data( self ):
+        last = int(self.part_file_content['last']) + 1
+        total = 0
+        for i in range(last):
+            tmp_part_file = JSONFILE( DATABASE_PATH + DATABASE_FILENAME + str(i) )
+            tmp_part_content = tmp_part_file._read_db()
+            total += len( tmp_part_content.keys() )
+
+        return total
+
+    def allKeys( self ):
+        idx = self.part_indexes
+        return idx
 
     def delete( self, key ):
         if key in self.part_indexes.keys():
@@ -105,3 +119,27 @@ class JSONDB:
             return True
         else:
             return False
+    
+    def update( self, array_k_value ):
+        classified = {}
+        for row in array_k_value:
+            key = list(row.keys())[0]
+            if not key in self.part_indexes.keys():
+                continue
+
+            part_ = str(self.part_indexes[key])
+            if part_ in classified.keys():
+                classified[ part_ ].append( row )
+            else:
+                classified[ part_ ] = [ row ]
+
+        for i in classified.keys():
+            tmp_part_file = JSONFILE( DATABASE_PATH + DATABASE_FILENAME + str(self.part_indexes[key]) )
+            tmp_part_content = tmp_part_file._read_db()
+
+            for row in classified[i]:
+                key = list(row.keys())[0]
+                value = row[key]
+                tmp_part_content[ key ] = value
+
+            tmp_part_file._write_db( tmp_part_content )
